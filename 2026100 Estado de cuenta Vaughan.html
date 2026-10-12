@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de Cuenta | Ing. Ricardo Vaughan - Suárez & Asociados</title>
+    <!-- Librería para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f1f5f9; color: #0f172a; line-height: 1.5; padding-bottom: 60px; min-height: 100vh; }
+        .mono { font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+
+        /* Encabezado y Logo */
+        header { background-color: #0f172a; color: #ffffff; padding: 16px 0; border-bottom: 4px solid #ea580c; }
+        .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+        .logo-box { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 46px; height: 46px; border-radius: 10px; background: linear-gradient(135deg, #ea580c, #9a3412); display: flex; align-items: center; justify-content: center; border: 1px solid #fed7aa; box-shadow: 0 2px 8px rgba(0,0,0,0.3); flex-shrink: 0; }
+        .logo-icon svg { width: 26px; height: 26px; fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .logo-title { font-size: 20px; font-weight: bold; letter-spacing: -0.3px; }
+        .logo-sub { font-size: 11px; color: #fbbf24; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* DATOS DEL CLIENTE (RESTABLECIDOS A LA PRIMERA VERSIÓN) */
+        .client-card-v1 { background-color: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 10px 18px; text-align: right; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .client-name-label { font-size: 12px; color: #cbd5e1; }
+        .client-name-val { color: #ffffff; font-weight: bold; font-size: 14px; }
+        .client-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+        .client-cuit-val { color: #fbbf24; font-weight: bold; }
+
+        /* Banner y Solapas */
+        .banner { background-color: #ffffff; padding: 20px 0 0 0; border-bottom: 2px solid #cbd5e1; margin-bottom: 24px; }
+        .banner-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding-bottom: 16px; }
+        .btn-notify { background-color: #059669; color: #ffffff; padding: 12px 20px; border-radius: 8px; border: none; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-block; text-decoration: none; }
+        .btn-notify:hover { background-color: #047857; }
+
+        /* Botones de Solapa */
+        .nav-tabs { display: flex; gap: 8px; overflow-x: auto; margin-top: 12px; }
+        .tab-btn { background: none; border: none; padding: 12px 20px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 4px solid transparent; white-space: nowrap; }
+        .tab-btn.active { color: #ea580c; border-bottom-color: #ea580c; font-weight: bold; }
+
+        /* Visibilidad de Solapas */
+        .tab-content { display: none; }
+        .tab-content.show { display: block !important; }
+
+        /* KPIs */
+        .grid-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .kpi-card { background: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1; border-top: 4px solid #ea580c; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .kpi-title { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .kpi-value { font-size: 26px; font-weight: bold; margin-top: 6px; color: #0f172a; }
+
+        /* Tablas */
+        .card { background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; margin-top: 12px; }
+        th { background-color: #f8fafc; padding: 12px; border-bottom: 2px solid #e2e8f0; color: #475569; font-size: 12px; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+
+        /* Cuentas de Transferencia */
+        .transfer-section { background: #fff7ed; border: 2px solid #ea580c; border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08); }
+        .transfer-title { font-size: 16px; font-weight: bold; color: #9a3412; margin-bottom: 4px; }
+        .transfer-subtitle { font-size: 12px; color: #c2410c; margin-bottom: 16px; }
+        .grid-accounts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+        .account-box { background: #ffffff; border: 2px solid #fed7aa; border-radius: 10px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .account-label { font-size: 12px; font-weight: bold; color: #475569; text-transform: uppercase; display: block; }
+        .account-data { font-size: 16px; font-weight: bold; color: #0f172a; margin-top: 4px; display: block; }
+        .btn-copy { background-color: #ea580c; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
+        /* ESTRUCTURA EN DOS COLUMNAS DEL SIMULADOR */
+        .simulador-two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .simulador-two-columns { grid-template-columns: 1fr; } }
+
+        /* Formulario y Modal */
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 999; justify-content: center; align-items: center; padding: 16px; }
+        .modal-box { background: #ffffff; padding: 24px; border-radius: 12px; max-width: 480px; width: 100%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .close-btn { position: absolute; top: 12px; right: 16px; font-size: 22px; border: none; background: none; cursor: pointer; color: #64748b; }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado Principal con Isotipo SVG y Ficha del Cliente V1 -->
+    <header>
+        <div class="container header-flex">
+            <div class="logo-box">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m0 0h5m-5 0V11m0 0h5m-5 0H7m5 0v5"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="logo-title">SUÁREZ & ASOCIADOS</div>
+                    <div class="logo-sub">Estudio Contable & Auditoría • Patagonia</div>
+                </div>
+            </div>
+
+            <!-- Ficha del Cliente (Restaurada) -->
+            <div class="client-card-v1">
+                <div class="client-name-label">Cliente: <span class="client-name-val">Ing. Ricardo Vaughan</span></div>
+                <div class="client-meta mono">CUIT: <span class="client-cuit-val">20-11526514-9</span> | Mat: <span style="color:#ffffff;">627</span></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner y Solapas -->
+    <div class="banner">
+        <div class="container">
+            <div class="banner-flex">
+                <div>
+                    <h2 style="font-size: 22px; font-weight: bold;">Estado de Cuenta & Posición Impositiva</h2>
+                    <p style="font-size: 13px; color: #64748b;">Período Liquidado: <strong>Octubre 2026</strong></p>
+                </div>
+                <button type="button" class="btn-notify" onclick="abrirModal()">+ Notificar Pago / Adjuntar Comprobante</button>
+            </div>
+
+            <div class="nav-tabs">
+                <button type="button" class="tab-btn active" id="btn-tab1" onclick="activarPestana('tab1', this)">1. Estado Actual</button>
+                <button type="button" class="tab-btn" id="btn-tab2" onclick="activarPestana('tab2', this)">2. Histórico & Tendencias</button>
+                <button type="button" class="tab-btn" id="btn-tab3" onclick="activarPestana('tab3', this)">3. Planes AFIP & Moratorias</button>
+                <button type="button" class="tab-btn" id="btn-tab4" onclick="activarPestana('tab4', this)">4. Simulador de Obras</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <div class="container">
+
+        <!-- SOLAPA 1: ESTADO ACTUAL -->
+        <div id="tab1" class="tab-content show">
+            <div class="grid-kpis">
+                <div class="kpi-card">
+                    <div class="kpi-title">Saldo Total a Entregar</div>
+                    <div class="kpi-value mono" style="color: #ea580c;">$ 2.831.390,43</div>
+                </div>
+                <div class="kpi-card" style="border-top-color: #0284c7;">
+                    <div class="kpi-title">Saldo Anterior</div>
+                    <div class="kpi-value mono">$ 1.110.965,47</div>
+                </div>
+                <div class="kpi-card" style="border-top-color: #e11d48;">
+                    <div class="kpi-title">Impuestos Período</div>
+                    <div class="kpi-value mono" style="color: #e11d48;">$ 1.490.424,39</div>
+                </div>
+                <div class="kpi-card" style="border-top-color: #059669;">
+                    <div class="kpi-title">Honorarios Estudio</div>
+                    <div class="kpi-value mono" style="color: #059669;">$ 230.000,00</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 12px;">Detalle de Obligaciones e Impuestos en Curso</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concepto / Obligación</th>
+                            <th>Vencimiento Oficial</th>
+                            <th style="text-align: center;">Estado</th>
+                            <th style="text-align: right;">Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody class="mono">
+                        <tr>
+                            <td style="font-family: inherit; font-weight: 600;">Saldo Anterior Acumulado</td>
+                            <td>-</td>
+                            <td style="text-align: center;">Pendiente</td>
+                            <td style="text-align: right;">$ 1.110.965,47</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: inherit; font-weight: 600;">IVA (AFIP) 09/26</td>
+                            <td style="color: #ea580c;">18/10/2026</td>
+                            <td style="text-align: center;">A Vencer</td>
+                            <td style="text-align: right;">$ 1.232.733,34</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: inherit; font-weight: 600;">Ingresos Brutos Trelew 09/26</td>
+                            <td style="color: #ea580c;">19/10/2026</td>
+                            <td style="text-align: center;">A Vencer</td>
+                            <td style="text-align: right;">$ 139.332,85</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: inherit; font-weight: 600;">Autónomos Cat. MT10 10/26</td>
+                            <td style="color: #ea580c;">07/10/2026</td>
+                            <td style="text-align: center;">Expirado</td>
+                            <td style="text-align: right;">$ 107.789,20</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: inherit; font-weight: 600;">Honorarios Estudio 09/26</td>
+                            <td>-</td>
+                            <td style="text-align: center;">Pendiente</td>
+                            <td style="text-align: right;">$ 230.000,00</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: inherit; font-weight: 600;">Servicio Doméstico 10/26</td>
+                            <td style="color: #ea580c;">10/10/2026</td>
+                            <td style="text-align: center;">Expirado</td>
+                            <td style="text-align: right;">$ 10.569,57</td>
+                        </tr>
+                        <tr style="background-color: #fff7ed; font-weight: bold; font-size: 16px;">
+                            <td style="font-family: inherit;">TOTAL A CANCELAR</td>
+                            <td>-</td>
+                            <td style="text-align: center; color: #ea580c;">SALDO NETO</td>
+                            <td style="text-align: right; color: #ea580c;">$ 2.831.390,43</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Cuentas de Transferencias -->
+            <div class="transfer-section">
+                <div class="transfer-title">💳 Cuentas Habilitadas para Transferencias</div>
+                <div class="transfer-subtitle">Realice su pago directamente utilizando las siguientes cuentas acreditadas:</div>
+                
+                <div class="grid-accounts">
+                    <div class="account-box">
+                        <div>
+                            <span class="account-label">🏦 Banco Patagonia (Caja de Ahorros)</span>
+                            <span class="account-data mono">0340362208362002909003</span>
+                        </div>
+                        <button type="button" class="btn-copy" onclick="copiarTexto('0340362208362002909003')">📋 Copiar CBU</button>
+                    </div>
+
+                    <div class="account-box">
+                        <div>
+                            <span class="account-label">💙 Mercado Pago</span>
+                            <span class="account-data mono">suarez.seba.mp</span>
+                        </div>
+                        <button type="button" class="btn-copy" onclick="copiarTexto('suarez.seba.mp')">📋 Copiar Alias</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOLAPA 2: HISTÓRICO Y TENDENCIAS -->
+        <div id="tab2" class="tab-content">
+            <div class="card">
+                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 4px;">Evolución Histórica de Saldos</h3>
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 16px;">Curvas comparativas de devengamientos e ingresos</p>
+                <div style="height: 320px; position: relative;">
+                    <canvas id="chartHistorico"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOLAPA 3: PLANES AFIP -->
+        <div id="tab3" class="tab-content">
+            <div class="card">
+                <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 12px;">Planes AFIP & Moratorias Consolidadas</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 12px; color: #64748b;">Capital Adeudado</span>
+                        <div class="mono" style="font-size: 20px; font-weight: bold; margin-top: 4px;">$ 1.187,21</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 12px; color: #64748b;">Intereses Resarcitorios</span>
+                        <div class="mono" style="font-size: 20px; font-weight: bold; color: #e11d48; margin-top: 4px;">$ 6.732,84</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span style="font-size: 12px; color: #64748b;">Total Moratoria Reclamada</span>
+                        <div class="mono" style="font-size: 20px; font-weight: bold; color: #ea580c; margin-top: 4px;">$ 7.920,05</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOLAPA 4: SIMULADOR DE OBRAS EN DOS COLUMNAS SEPARADAS -->
+        <div id="tab4" class="tab-content">
+            <div class="card">
+                <div class="simulador-two-columns">
+                    <!-- Columna 1: Formulario de Entradas -->
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 16px;">Calculadora para Certificados de Obra</h3>
+                        
+                        <div class="form-group">
+                            <label>Monto Neto Certificado ($)</label>
+                            <input type="number" id="simMonto" value="10000000" oninput="calcularObra()">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Alícuota IVA Obras</label>
+                            <select id="simIva" onchange="calcularObra()">
+                                <option value="21">21% - Obras Comerciales / Servicios de Ingeniería</option>
+                                <option value="10.5">10.5% - Viviendas / Construcción Social</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Ingresos Brutos (IIBB Chubut)</label>
+                            <select id="simIibb" onchange="calcularObra()">
+                                <option value="2.5">2.5% - Construcción e Ingeniería</option>
+                                <option value="3.5">3.5% - Tasa General / Servicios</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Columna 2: Resultado y Botón Directo a ARCA -->
+                    <div style="background: #fff7ed; padding: 20px; border-radius: 10px; border: 1px solid #fed7aa; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <h4 style="font-size: 12px; color: #ea580c; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Cálculo Proyectado</h4>
+                            
+                            <div class="mono" style="margin-top: 16px; font-size: 14px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #fed7aa; padding-bottom: 6px;">
+                                    <span style="font-family: inherit; font-weight: normal; color: #475569;">Monto Neto:</span>
+                                    <strong id="outNeto">$ 10.000.000,00</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #fed7aa; padding-bottom: 6px;">
+                                    <span style="font-family: inherit; font-weight: normal; color: #475569;">IVA Proyectado:</span>
+                                    <strong id="outIva" style="color: #ea580c;">$ 2.100.000,00</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #fed7aa; padding-bottom: 6px;">
+                                    <span style="font-family: inherit; font-weight: normal; color: #475569;">IIBB Chubut Estimado:</span>
+                                    <strong id="outIibb" style="color: #e11d48;">$ 250.000,00</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; pt-2; color: #ea580c;">
+                                    <span style="font-family: inherit;">Total Certificado Bruto:</span>
+                                    <span id="outTotal">$ 12.100.000,00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Acceso Directo a Portal ARCA / AFIP -->
+                        <a href="https://auth.afip.gob.ar/contribuyente_/login.xhtml" target="_blank" style="display: block; text-align: center; background: #ea580c; color: white; padding: 12px; border-radius: 6px; font-weight: bold; margin-top: 20px; text-decoration: none; font-size: 13px;">
+                            🌐 Ir al Portal de Facturación ARCA (AFIP)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Notificar Pago -->
+    <div id="modalPago" class="modal-overlay">
+        <div class="modal-box">
+            <button type="button" class="close-btn" onclick="cerrarModal()">✕</button>
+            <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 12px;">Notificar Pago / Adjuntar Comprobante</h3>
+            <div class="form-group">
+                <label>Monto Transferido ($)</label>
+                <input type="number" id="payAmount" placeholder="Ej. 2831390">
+            </div>
+            <div class="form-group">
+                <label>Cuenta Destino</label>
+                <select id="payAccount">
+                    <option value="Banco Patagonia">Banco Patagonia</option>
+                    <option value="Mercado Pago">Mercado Pago</option>
+                </select>
+            </div>
+            <button type="button" onclick="enviarWhatsApp()" style="width: 100%; background: #059669; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Enviar Confirmación por WhatsApp</button>
+        </div>
+    </div>
+
+    <!-- Script Logic Directo -->
+    <script>
+        function activarPestana(idTab, btn) {
+            var tabs = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('show');
+            }
+
+            var btns = document.querySelectorAll('.tab-btn');
+            for (var j = 0; j < btns.length; j++) {
+                btns[j].classList.remove('active');
+            }
+
+            var target = document.getElementById(idTab);
+            if (target) {
+                target.classList.add('show');
+            }
+            if (btn) {
+                btn.classList.add('active');
+            }
+
+            if (idTab === 'tab2' && !window.graficoListo) {
+                setTimeout(dibujarGrafico, 100);
+                window.graficoListo = true;
+            }
+        }
+
+        function dibujarGrafico() {
+            try {
+                var canvas = document.getElementById('chartHistorico');
+                if (!canvas || typeof Chart === 'undefined') return;
+                var ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['2016', '2017', '2018', '2026 (Actual)'],
+                        datasets: [
+                            { label: 'Cargos e Impuestos ($)', data: [450000, 890000, 1377465, 1490424], borderColor: '#0284c7', backgroundColor: 'rgba(2, 132, 199, 0.1)', fill: true, tension: 0.3 },
+                            { label: 'Entregas del Cliente ($)', data: [400000, 800000, 2000000, 0], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
+                            { label: 'Saldo Neto Acumulado ($)', data: [50000, 140000, 1377465, 2831390], borderColor: '#ea580c', borderWidth: 3, borderDash: [5, 5], fill: false, tension: 0.3 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            } catch (e) {}
+        }
+
+        function copiarTexto(txt) {
+            if (navigator.clipboard) { navigator.clipboard.writeText(txt); }
+            alert("Copiado al portapapeles: " + txt);
+        }
+
+        function abrirModal() { document.getElementById('modalPago').style.display = 'flex'; }
+        function cerrarModal() { document.getElementById('modalPago').style.display = 'none'; }
+
+        function enviarWhatsApp() {
+            var monto = document.getElementById('payAmount').value || "2831390";
+            var cuenta = document.getElementById('payAccount').value;
+            var txt = encodeURIComponent("Hola Seba, notifico pago realizado por $" + monto + " transferidos a " + cuenta + ".");
+            window.open("https://wa.me/5492804262911?text=" + txt, "_blank");
+            cerrarModal();
+        }
+
+        function calcularObra() {
+            try {
+                var mInput = document.getElementById('simMonto');
+                if (!mInput) return;
+                var neto = parseFloat(mInput.value) || 0;
+                var ivaPct = parseFloat(document.getElementById('simIva').value) || 21;
+                var iibbPct = parseFloat(document.getElementById('simIibb').value) || 2.5;
+
+                var iva = neto * (ivaPct / 100);
+                var iibb = neto * (iibbPct / 100);
+                var total = neto + iva;
+
+                document.getElementById('outNeto').innerText = '$ ' + neto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                document.getElementById('outIva').innerText = '$ ' + iva.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                document.getElementById('outIibb').innerText = '$ ' + iibb.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                document.getElementById('outTotal').innerText = '$ ' + total.toLocaleString('es-AR', {minimumFractionDigits: 2});
+            } catch (e) {}
+        }
+
+        window.onload = function() { calcularObra(); };
+    </script>
+</body>
+</html>
